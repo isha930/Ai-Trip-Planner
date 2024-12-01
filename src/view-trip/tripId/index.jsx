@@ -47,9 +47,9 @@ function Viewtrip() {
   const convertHotelsToArray = (hotelOptions) => {
     if (!hotelOptions) return [];
     return hotelOptions.map((hotel) => ({
-      hotelName: hotel.hotelName || "Unknown Hotel",
-      hotelAddress: hotel.hotelAddress || "Address not available",
-      hotelImageUrl: hotel.hotelImageUrl || "fallback-image-url.jpg",
+      hotelName: hotel.HotelName || hotel.hotelName || "Unknown Hotel",
+      hotelAddress: hotel.HotelAddress || hotel.hotelAddress || "Address not available",
+      hotelImageUrl: hotel.HotelImageUrl || hotel.hotelImageUrl || "fallback-image-url.jpg",
       description: hotel.description || "No description available",
       geoCoordinates: hotel.geoCoordinates || "Coordinates not available",
       price: hotel.price || "Price not specified",
