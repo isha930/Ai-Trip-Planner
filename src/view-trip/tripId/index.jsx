@@ -47,16 +47,16 @@ function Viewtrip() {
   const convertHotelsToArray = (hotelOptions) => {
     if (!hotelOptions) return [];
     return hotelOptions.map((hotel) => ({
-      hotelName: hotel.HotelName || "Unknown Hotel",
-      hotelAddress: hotel.HotelAddress || "Address not available",
-      hotelImageUrl: hotel.HotelImageUrl || "fallback-image-url.jpg",
+      hotelName: hotel.hotelName || "Unknown Hotel",
+      hotelAddress: hotel.hotelAddress || "Address not available",
+      hotelImageUrl: hotel.hotelImageUrl || "fallback-image-url.jpg",
       description: hotel.description || "No description available",
       geoCoordinates: hotel.geoCoordinates || "Coordinates not available",
-      price: hotel.Price || "Price not specified",
+      price: hotel.price || "Price not specified",
       rating: hotel.rating || "Rating not available",
     }));
   };
-
+  
   const GetTripData = async () => {
     setLoading(true); // Set loading state to true before fetching
     console.log("Fetching trip data for ID:", tripId); // Log to see if this runs
