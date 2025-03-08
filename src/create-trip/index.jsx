@@ -249,21 +249,33 @@ const[loading,setLoading]=useState(false)
       </div>
       <Dialog open={openDialog}>
   
-  <DialogContent>
-    <DialogHeader>
-      <DialogDescription>
-       <img src="/logo.svg"/>
-       <h2 className='font-bold text-lg mt-7'>Sign in with Google</h2>
-       <p>Sign in to the App with Google Authentication Securely</p>
-       <Button 
-       
-       onClick={() => login()} variant="default" className="bg-black text-white w-full mt-5">
-  Sign in with Google
-</Button>
-
-      </DialogDescription>
-    </DialogHeader>
-  </DialogContent>
+      <DialogContent>
+            <DialogHeader>
+              <DialogDescription className="flex flex-col items-center text-center">
+    {/* Title & Home Icon */}
+    <div className="flex items-center gap-3">
+      <h2 className="text-4xl font-extrabold">Itinero</h2>
+      <a href="/" className="text-3xl text-black hover:text-gray-700">
+        <IoMdHome />
+      </a>
+    </div>
+  
+    {/* Sign-in Text */}
+    <h2 className="font-bold text-lg mt-7">Sign in with Google</h2>
+    <p className="text-gray-600">Sign in to the App with Google Authentication Securely</p>
+  
+    {/* Google Sign-in Button */}
+    <Button 
+      onClick={() => login()} 
+      variant="default" 
+      className="bg-black text-white w-full mt-5"
+    >
+      Sign in with Google
+    </Button>
+  </DialogDescription>
+  
+            </DialogHeader>
+          </DialogContent>
 </Dialog>
 
     </div>
