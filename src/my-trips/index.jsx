@@ -25,7 +25,7 @@ function MyTrips() {
 
     console.log("Fetching trips for user:", user.email);
     setUserTrips([]); // Clear previous data
-    const q = query(collection(db, 'AITrips'), where('userEmail', '==', user?.email));
+    const q = query(collection(db, 'aitp'), where('userEmail', '==', user?.email));
     const querySnapshot = await getDocs(q);
 
     const trips = [];

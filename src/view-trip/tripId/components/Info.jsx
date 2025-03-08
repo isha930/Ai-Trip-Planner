@@ -1,99 +1,93 @@
 import { Button } from '@/components/ui/button';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { IoIosSend } from "react-icons/io";
-import axios from 'axios';
 
 function Info({ trip }) {
-  console.log("tripdata received in info",trip);
-  
+    const [imageUrl, setImageUrl] = useState('/landscape.jpg');
+    const [locationName, setLocationName] = useState("Your Destination");
 
-  const [imageUrl, setImageUrl] = useState('/landscape.jpg');
+    const fetchPlaceImage = useCallback(async (placeName) => {
+        const pexelsApiKey = import.meta.env.VITE_PEXELS_API_KEY;
+           
+        if (!pexelsApiKey) {
+            console.error("Pexels API Key is missing.");
+            return;
+        }
+        try {
+            const response = await fetch(
+                `https://api.pexels.com/v1/search?query=${encodeURIComponent(placeName)}&per_page=1`,
+                {
+                    headers: {
+                        Authorization: pexelsApiKey,
+                    },
+                }
+            );
 
-  // Fetch place image from Bing
-  const fetchPlaceImage = async (placeName) => {
-    const bingSearchKey = import.meta.env.VITE_BING_SEARCH_API_KEY;
+            if (response.ok) {
+                const data = await response.json();
+                if (data.photos && data.photos.length > 0) {
+                    setImageUrl(data.photos[0].src.large);
+                } else {
+                    console.log("No images found for:", placeName, ". Using default image.");
+                }
+            } else {
+                console.error(`Error fetching place image for ${placeName}:`, response.status, response.statusText);
+            }
+        } catch (error) {
+            console.error("Error fetching place image:", error);
+        }
+    }, []);
 
-    if (!bingSearchKey) {
-      console.error("Bing API Key is missing.");
-      return;
-    }
+    useEffect(() => {
+        if (trip) {
+            console.log("Trip data is now available:", trip);
+            const placeName = trip?.userSelection?.location?.place_name;
+            if (placeName) {
+                console.log(`Fetching image for: ${placeName}`);
+                 setLocationName(placeName);
+                fetchPlaceImage(placeName);
+               
+            } else {
+                console.log("No place name available to fetch image for.");
+            }
+        } else {
+            console.log("Trip data is not yet available.");
+        }
+    }, [trip,fetchPlaceImage]);
 
-    try {
-      const response = await axios.get('https://api.bing.microsoft.com/v7.0/images/search', {
-        headers: { 'Ocp-Apim-Subscription-Key': bingSearchKey },
-        params: {
-          q: placeName,
-          count: 1,
-        },
-      });
+    return (
+        <div className="mt-16 relative">
+            {/* Main Banner Image */}
+            <div className="relative w-full h-[400px] overflow-hidden rounded-lg">
+    <img
+        src={imageUrl}
+        alt={locationName}
+        className="w-full h-full object-cover rounded-lg"
+    />
+</div>
 
-      if (response.data.value && response.data.value.length > 0) {
-        setImageUrl(response.data.value[0].contentUrl);
-      } else {
-        console.log("No images found.");
-      }
-    } catch (error) {
-      console.error("Error fetching place image:", error);
-    }
-  };
 
-  useEffect(() => {
-    if (trip ) {
-      console.log("Trip data is now available:", trip);
-      const placeName = trip?.userSelection?.location?.place_name;
-      if (placeName) {
-        console.log(`Fetching image for: ${placeName}`);
-        fetchPlaceImage(placeName);
-      } else {
-        console.log("No place name available to fetch image for.");
-      }
-    } else {
-      console.log("Trip data is not yet available.");
-    }
-  }, [trip]);
-  const prevTripRef = useRef(null);
+            {/* Trip Details Below Image */}
+            <div className="bg-white shadow-md p-6 md:p-8 rounded-lg mt-4">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-800 text-center">
+                    {locationName}
+                </h1>
 
-useEffect(() => {
-  if (trip && JSON.stringify(trip) !== JSON.stringify(prevTripRef.current)) {
-    console.log("Received trip data:", trip);
-    prevTripRef.current = trip;
-  }
-}, [trip]);
-
-  
-  
-
-  return (
-    <div>
-      {/* Main Banner Image */}
-      <img 
-        src={imageUrl} 
-        alt="Main place image" 
-        className="h-[400px] w-full object-cover rounded-xl" 
-        style={{ objectFit: 'cover', width: '100%', height: '400px', objectPosition: 'top' }} 
-      />
-
-      <div className="flex justify-between items-center">
-        <div className="my-5 flex flex-col gap-2">
-          <h2 className="font-bold text-2xl">{trip?.userSelection?.location?.place_name}</h2>
-
-          <div className="flex gap-5">
-            <h2 className="p-1 px-3 bg-gray-200 rounded-full text-gray-500 text-xs md:text-md">
-              📅 {trip?.userSelection?.noOfDays} Day 
-            </h2>
-            <h2 className="p-1 px-3 bg-gray-200 rounded-full text-gray-500 text-xs md:text-md">
-              💸 {trip?.userSelection?.budget} Budget
-            </h2>
-            <h2 className="p-1 px-3 bg-gray-200 rounded-full text-gray-500 text-xs md:text-md">
-              🥂 {trip?.userSelection?.travellers} Travellers
-            </h2>
-          </div>
+                {/* Trip Information */}
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                    <h2 className="p-2 px-4 bg-gray-100 rounded-full text-gray-700 text-sm md:text-md flex items-center gap-2">
+                        📅 {trip?.userSelection?.noOfDays || "N/A"} Days
+                    </h2>
+                    <h2 className="p-2 px-4 bg-gray-100 rounded-full text-gray-700 text-sm md:text-md flex items-center gap-2">
+                        💸 {trip?.userSelection?.budget || "N/A"} Budget
+                    </h2>
+                    <h2 className="p-2 px-4 bg-gray-100 rounded-full text-gray-700 text-sm md:text-md flex items-center gap-2">
+                        🥂 {trip?.userSelection?.travellers || "N/A"} Travellers
+                    </h2>
+                </div>
+            </div>
         </div>
-
-        <Button><IoIosSend /></Button>
-      </div>
-    </div>
-  );
+    );
 }
 
 export default Info;

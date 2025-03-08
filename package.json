@@ -20,6 +20,7 @@
     "@types/google.maps": "^3.57.0",
     "axios": "^1.7.7",
     "azure-maps-control": "^3.4.0",
+    "caniuse-lite": "^1.0.30001702",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",

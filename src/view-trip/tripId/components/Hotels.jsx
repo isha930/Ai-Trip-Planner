@@ -1,101 +1,130 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { IoLocationSharp } from "react-icons/io5";
 
 function Hotels({ trip }) {
-  console.log("tripdata received in hotel",trip);
-  if (!trip || !trip.tripData) {
-    return <div>No hotel data available</div>;
-  }
+    // Check if hotel data is available
+    if (!trip || !trip.tripData || !trip.tripData.hotel_options) {
+        return <div>No hotel data available</div>;
+    }
 
-  const [hotelImages, setHotelImages] = useState({});
+    // Access hotel array directly
+    const hotelOptions = trip.tripData.hotel_options;
 
-  const openInGoogleMaps = (hotel) => {
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hotel.hotelName)}`;
-    window.open(url, "_blank");
-  };
+    const [hotelImages, setHotelImages] = useState({});
+    const [isLoadingImages, setIsLoadingImages] = useState(false);
 
-  // Function to introduce a delay between API calls
-  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const openInGoogleMaps = useCallback((hotel) => {
+        if (hotel?.hotelName) {
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                hotel.hotelName
+            )}`;
+            window.open(url, "_blank");
+        } else {
+            console.error("hotelName is missing");
+        }
+    }, []);
 
-  const fetchHotelImages = async () => {
-    const API_KEY = import.meta.env.VITE_BING_SEARCH_API_KEY;
-    const hotelOptions = trip.tripData.hotel_options || [];
-
-    for (let i = 0; i < hotelOptions.length; i++) {
-      const hotel = hotelOptions[i];
-      try {
-        // Introduce a 1-second delay between requests to avoid hitting the rate limit
-        await delay(1000);
-
-        const response = await fetch(`https://api.bing.microsoft.com/v7.0/images/search?q=${encodeURIComponent(hotel.hotelName)}&count=1`, {
-          headers: {
-            'Ocp-Apim-Subscription-Key': API_KEY,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Error fetching images: ${response.statusText}`);
+    // Function to fetch place images using Pexels API
+    const fetchHotelImages = useCallback(async () => {
+        const API_KEY = import.meta.env.VITE_PEXELS_API_KEY; // Change to Pexels API key
+        if (!API_KEY) {
+            console.error("Pexels API key is missing");
+            setIsLoadingImages(false); // No images to load
+            return;
         }
 
-        const data = await response.json();
-        console.log(`Images for ${hotel.hotelName}:`, data.value);
+        const newHotelImages = {};
+        setIsLoadingImages(true);
 
-        // Store images in the hotelImages state
-        setHotelImages((prevImages) => ({
-          ...prevImages,
-          [hotel.hotelName]: data.value[0]?.thumbnailUrl || '/default-hotel.jpg', // fallback to a default image if no result
-        }));
-      } catch (error) {
-        console.error(`Error fetching images for ${hotel.hotelName}:`, error);
-        // Fallback to default image in case of error
-        setHotelImages((prevImages) => ({
-          ...prevImages,
-          [hotel.hotelName]: '/default-hotel.jpg',
-        }));
-      }
-    }
-  };
+        const fetchPromises = hotelOptions.map(async (hotel) => {
+            try {
+                const response = await fetch(
+                    `https://api.pexels.com/v1/search?query=${encodeURIComponent(hotel.hotelName)}&per_page=1`, // Pexels endpoint
+                    {
+                        headers: {
+                            "Authorization": API_KEY,
+                        },
+                    }
+                );
 
-  useEffect(() => {
-    fetchHotelImages();
-  }, [trip]);
+                if (response.ok) {
+                    const data = await response.json();
+                    //Pexels return photos array, so we check if there is any photo in the array
+                    newHotelImages[hotel.hotelName] = data.photos.length > 0 ? data.photos[0].src.medium : "/default-hotel.jpg";
+                } else {
+                    newHotelImages[hotel.hotelName] = "/default-hotel.jpg";
+                }
+            } catch (error) {
+                console.error(`Error fetching image for ${hotel.hotelName}:`, error);
+                newHotelImages[hotel.hotelName] = "/default-hotel.jpg";
+            }
+        })
+        await Promise.all(fetchPromises);
+        setHotelImages(newHotelImages);
+        setIsLoadingImages(false);
+    }, [hotelOptions]);
 
-  return (
-    <div>
-      <h2 className='font-bold text-xl mt-5'>Hotel Recommendations</h2>
+    useEffect(() => {
+        fetchHotelImages();
+    }, [fetchHotelImages]);
 
-      {trip?.tripData?.hotel_options && trip.tripData.hotel_options.length > 0 ? (
-        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6'>
-          {trip.tripData.hotel_options.map((hotel, index) => (
-            <div key={index} className='border p-4 rounded-lg shadow-md hover:scale-105 transition-all cursor-pointer flex flex-col'>
-              {/* Hotel Image */}
-              <img
-                src={hotelImages[hotel.hotelName] || '/default-hotel.jpg'}
-                alt={hotel.hotelName}
-                className='rounded-lg w-full h-48 object-cover mb-2'
-                onError={(e) => { e.target.src = '/default-hotel.jpg'; }}
-              />
+    return (
+      <div className="mt-6">
+          <h2 className="font-bold text-xl mt-5">Hotel Recommendations</h2>
 
-              {/* Hotel Info */}
-              <h3 className='font-bold text-lg'>{hotel.hotelName}</h3>
-              <p className='text-sm text-gray-600'>{hotel.hotelAddress}</p>
-              <p className='mt-2 text-gray-800 font-semibold'>{hotel.price}</p>
-              {hotel.rating && <p className='mt-1 text-yellow-500'>⭐ {hotel.rating} Stars</p>}
-              {hotel.description && <p className='mt-2 text-sm text-gray-500'>{hotel.description}</p>}
+          {hotelOptions && hotelOptions.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {hotelOptions.map((hotel, index) => (
+                      <div
+                          key={index}
+                          className="border p-4 rounded-lg shadow-md hover:scale-105 transition-all cursor-pointer flex flex-col"
+                      >
+                          {/* Hotel Image */}
+                          <img
+                              src={hotelImages[hotel.hotelName] || "/default-hotel.jpg"}
+                              alt={hotel.hotelName}
+                              className="rounded-lg w-full h-48 object-cover mb-2"
+                              onError={(e) => (e.target.src = "/default-hotel.jpg")}
+                          />
 
-              {/* Google Maps Button */}
-              <Button onClick={() => openInGoogleMaps(hotel)} className='mt-2 text-sm flex items-center'>
-                <IoLocationSharp className="mr-2" /> View on Maps
-              </Button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className='mt-5 text-gray-500'>No hotel recommendations available at the moment.</p>
-      )}
-    </div>
+                          {/* Hotel Info */}
+                          <h3 className="font-bold text-lg">{hotel.hotelName || "Unknown Hotel"}</h3>
+                          <p className="text-sm text-gray-600">{hotel.hotelAddress || "Address not available"}</p>
+
+                          {/* Hotel Price */}
+                          <p className="mt-2 text-gray-800 font-semibold">
+                              <strong>Price:</strong> {hotel.price || "Not specified"}
+                          </p>
+
+                          {/* Hotel Rating */}
+                          {hotel.rating && (
+                              <p className="mt-1 text-yellow-500">
+                                  ⭐ {parseFloat(hotel.rating).toFixed(1)} Stars
+                              </p>
+                          )}
+
+                          {/* Hotel Description */}
+                          {hotel.description && (
+                              <p className="mt-2 text-sm text-gray-500">{hotel.description}</p>
+                          )}
+
+                          {/* View on Maps Button */}
+                          <button
+                              onClick={() => openInGoogleMaps(hotel)}
+                              className="mt-3 flex items-center justify-center bg-blue-500 text-white py-2 px-4 rounded-md shadow-md hover:bg-blue-600 transition"
+                          >
+                              <IoLocationSharp className="mr-2" />
+                              View on Maps
+                          </button>
+                      </div>
+                  ))}
+              </div>
+          ) : (
+              <p className="text-gray-500 mt-4">No hotels found.</p>
+          )}
+      </div>
   );
-}
+};
 
 export default Hotels;

@@ -151,7 +151,7 @@ const[loading,setLoading]=useState(false)
     }
   
     try {
-      await setDoc(doc(db, "AITrips", docid), {
+      await setDoc(doc(db, "aitp", docid), {
         userSelection: formData,
         tripData: parsedTripData,
         userEmail: user?.email,

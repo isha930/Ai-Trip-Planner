@@ -1,33 +1,35 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 import { MdDelete } from "react-icons/md";
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from '@/service/Firebaseconfig';
 import { useNavigate } from "react-router-dom";
 
 function UserTripCardItem({ trip, onDelete }) {
-  const [placeImageUrl, setPlaceImageUrl] = useState('');
-  
+  const [placeImageUrl, setPlaceImageUrl] = useState('/landscape.jpg'); // Set default image
+
   // Function to fetch the image for the trip's location
   const fetchPlaceImage = async () => {
     try {
       const placeName = trip?.userSelection?.location?.place_name;
       if (placeName) {
-        // Replace YOUR_BING_SEARCH_API_KEY with your actual API key
-        const response = await axios.get(`https://api.bing.microsoft.com/v7.0/images/search`, {
+        const response = await axios.get(`https://api.pexels.com/v1/search`, {
           headers: {
-            'Ocp-Apim-Subscription-Key': import.meta.env.VITE_BING_SEARCH_API_KEY, // Make sure you have this in your .env file
+            Authorization: import.meta.env.VITE_PEXELS_API_KEY, // Correct API Key
           },
           params: {
-            q: placeName,
-            count: 1,
+            query: placeName, // Use the placeName for the query
+            per_page: 1, // Number of images to fetch
           },
         });
 
-        const imageUrl = response.data.value[0]?.contentUrl;
-        if (imageUrl) {
+        if (response.data.photos.length > 0) {
+          const imageUrl = response.data.photos[0].src.medium;
           setPlaceImageUrl(imageUrl);
+        } else {
+          setPlaceImageUrl('/landscape.jpg');
+          console.log("No images found in pexels for ", placeName);
         }
       }
     } catch (error) {
@@ -43,11 +45,11 @@ function UserTripCardItem({ trip, onDelete }) {
 
   const handleDelete = async () => {
     try {
-      const tripId = trip.id; 
+      const tripId = trip.id;
       console.log("Trip ID to delete:", tripId); // Verify trip ID
-      
+
       // Delete the document from Firestore
-      await deleteDoc(doc(db, "AITrips", tripId));
+      await deleteDoc(doc(db, "aitp", tripId));
 
       // Optionally, you can remove the trip from local storage
       const trips = JSON.parse(localStorage.getItem('trips')) || [];
@@ -71,7 +73,7 @@ function UserTripCardItem({ trip, onDelete }) {
     <div className="max-w-sm bg-white shadow-lg rounded-xl overflow-hidden">
       {/* Trip Image */}
       <img
-        src={placeImageUrl || '/landscape.jpg'} // Use the fetched image or a default
+        src={placeImageUrl} // Use the fetched image or the default '/landscape.jpg'
         alt="Trip Destination"
         className="w-full h-48 object-cover"
       />
